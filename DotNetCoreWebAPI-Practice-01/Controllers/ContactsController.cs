@@ -21,43 +21,110 @@ namespace DotNetCoreWebAPI_Practice_01.Controllers
         [HttpGet]
         public IActionResult GetContacts()
         {
-            return Ok(dbContext.Contacts.ToList());
+            try
+            {
+                return Ok(dbContext.Contacts.ToList());
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, "An error occurred In Contact Data Getting : " + ex.Message);
+            }
+        }
+
+        [HttpGet]
+        [Route("{id:guid}")]
+        public async Task<IActionResult> GetContactById([FromRoute] Guid id)
+        {
+            try
+            {
+                var contact = dbContext.Contacts.Find(id);
+                if (contact == null)
+                {
+                    return NotFound();
+                }
+
+                return Ok(contact);
+            }
+            catch(Exception ex)
+            {
+                return StatusCode(500, "An error occurred In  Get Contact By Id :" + ex.Message);
+            }
         }
 
         [HttpPost]
         public async Task<IActionResult> AddContacts( AddContactsRequest addContacts)
         {
-            var contacts = new Contact
+
+            try
             {
-                Id = Guid.NewGuid(),
-                Email = addContacts.Email,
-                FullName = addContacts.FullName,
-                Phone = addContacts.Phone,
-                Address = addContacts.Address
-            };
-            await dbContext.Contacts.AddAsync(contacts);
-            await dbContext.SaveChangesAsync();
-            return Ok(contacts);
+                var contacts = new Contact
+                {
+                    Id = Guid.NewGuid(),
+                    Email = addContacts.Email,
+                    FullName = addContacts.FullName,
+                    Phone = addContacts.Phone,
+                    Address = addContacts.Address
+                };
+                await dbContext.Contacts.AddAsync(contacts);
+                await dbContext.SaveChangesAsync();
+
+                return Ok(contacts);
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, "An error occurred In Contact Data Posting : " + ex.Message);
+            }
         }
 
         [HttpPut]
-        [Route("{id: guid}")]
+        [Route("{id:guid}")]
 
-        public  async Task<IActionResult> UpdateContacts([FromRoute] Guid id, UpdateControllerRequest updaterequest)
+        public async Task<IActionResult> UpdateContacts([FromRoute] Guid id, UpdateControllerRequest updaterequest)
         {
-            var con = dbContext.Contacts.Find(id);
-            if (con != null)
+            try
             {
-                con.FullName = updaterequest.FullName;
-                con.Email = updaterequest.Email;
-                con.Phone = updaterequest.Phone;
-                con.Address = updaterequest.Address;
+                var contactId = await dbContext.Contacts.FindAsync(id);
+                if (contactId != null)
+                {
+                    contactId.FullName = updaterequest.FullName;
+                    contactId.Email = updaterequest.Email;
+                    contactId.Phone = updaterequest.Phone;
+                    contactId.Address = updaterequest.Address;
 
-                 dbContext.SaveChanges();
-                return Ok(con);
+                    dbContext.SaveChanges();
+                    return Ok(contactId);
+                }
+                return NotFound();
             }
-            return NotFound();
-
+            catch (Exception ex)
+            {
+                return StatusCode(500, "An error occurred In Contact Data Updating :" + ex.Message);
+            }
         }
+
+        [HttpDelete]
+        [Route("{id:guid}")]
+        public async Task<IActionResult> DeleteId([FromRoute] Guid id)
+        {
+            try
+            {
+                var contact = await dbContext.Contacts.FindAsync(id);
+
+                if (contact != null)
+                {
+                    dbContext.Contacts.Remove(contact);
+                    dbContext.SaveChanges();
+                    return Ok(contact);
+                }
+                return NotFound();
+            }
+            catch(Exception ex)
+            {
+                return StatusCode(500, " An error occurred In Delete Contact: " + ex.Message);
+            }
+            
+        }
+        
+
     }
 }
